@@ -31,6 +31,13 @@ def bigendian_to_native(value):
         return string_reverse(value)
 
 class StructTest(unittest.TestCase):
+    def test_init(self):
+        for cls in (bytes.decode, bytes, bytearray):
+            s = struct.Struct(cls(b'4s'))
+            self.assertEqual(b'1234', s.unpack_from(b'123456')[0])
+            s.__init__(cls(b'4s'))
+            self.assertEqual(b'1234', s.unpack_from(b'123456')[0])
+
     def test_isbigendian(self):
         self.assertEqual((struct.pack('=i', 1)[0] == 0), ISBIGENDIAN)
 

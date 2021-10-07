@@ -1,0 +1,1 @@
+Support buffer protocol for _struct.Struct.__init__ format argument

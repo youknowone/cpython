@@ -1475,18 +1475,28 @@ Struct___init___impl(PyStructObject *self, PyObject *format)
         if (format == NULL)
             return -1;
     }
-    /* XXX support buffer interface, too */
     else {
         Py_INCREF(format);
     }
 
     if (!PyBytes_Check(format)) {
+        int ret;
+        Py_buffer view = { 0 };
+
+        ret = PyObject_GetBuffer(format, &view, PyBUF_SIMPLE);
         Py_DECREF(format);
-        PyErr_Format(PyExc_TypeError,
-                     "Struct() argument 1 must be a str or bytes object, "
-                     "not %.200s",
-                     _PyType_Name(Py_TYPE(format)));
-        return -1;
+        if (ret != 0) {
+            PyErr_Format(PyExc_TypeError,
+                        "Struct() argument 1 must be a str or bytes object, "
+                        "not %.200s",
+                        _PyType_Name(Py_TYPE(format)));
+            return -1;
+        }
+        format = PyBytes_FromStringAndSize(view.buf, view.len);
+        PyBuffer_Release(&view);
+        if (format == NULL) {
+            return -1;
+        }
     }
 
     Py_SETREF(self->s_format, format);
