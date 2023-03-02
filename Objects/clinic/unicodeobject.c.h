@@ -1257,9 +1257,6 @@ unicode___format__(PyObject *self, PyObject *arg)
         _PyArg_BadArgument("__format__", "argument", "str", arg);
         goto exit;
     }
-    if (PyUnicode_READY(arg) == -1) {
-        goto exit;
-    }
     format_spec = arg;
     return_value = unicode___format___impl(self, format_spec);
 
