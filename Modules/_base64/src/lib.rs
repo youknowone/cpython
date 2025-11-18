@@ -83,7 +83,7 @@ struct BorrowedBuffer {
 }
 
 impl BorrowedBuffer {
-    unsafe fn from_object(obj: *mut PyObject) -> Result<Self, ()> {
+    fn from_object(obj: &mut PyObject) -> Result<Self, ()> {
         let mut view = MaybeUninit::<Py_buffer>::uninit();
         if unsafe { PyObject_GetBuffer(obj, view.as_mut_ptr(), PYBUF_SIMPLE) } != 0 {
             return Err(());
@@ -110,6 +110,9 @@ impl Drop for BorrowedBuffer {
     }
 }
 
+/// # Safety
+/// `module` must be a valid pointer of PyObject representing the module.
+/// `args` must be a valid pointer to an array of valid PyObject pointers with length `nargs`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn standard_b64encode(
     _module: *mut PyObject,
@@ -123,13 +126,21 @@ pub unsafe extern "C" fn standard_b64encode(
                 c"standard_b64encode() takes exactly one argument".as_ptr(),
             );
         }
-        return ptr::null_mut();
     }
 
-    let source = unsafe { *args };
-    let buffer = match unsafe { BorrowedBuffer::from_object(source) } {
+    let source = unsafe { &mut **args };
+
+    // Safe cast by Safety
+    match standard_b64encode_impl(source) {
+        Ok(result) => result,
+        Err(_) => ptr::null_mut(),
+    }
+}
+
+fn standard_b64encode_impl(source: &mut PyObject) -> Result<*mut PyObject, ()> {
+    let buffer = match BorrowedBuffer::from_object(source) {
         Ok(buf) => buf,
-        Err(_) => return ptr::null_mut(),
+        Err(_) => return Err(()),
     };
 
     let view_len = buffer.len();
@@ -140,8 +151,9 @@ pub unsafe extern "C" fn standard_b64encode(
                 c"standard_b64encode() argument has negative length".as_ptr(),
             );
         }
-        return ptr::null_mut();
+        return Err(());
     }
+
     let input_len = view_len as usize;
     let input = unsafe { slice::from_raw_parts(buffer.as_ptr(), input_len) };
 
@@ -149,21 +161,19 @@ pub unsafe extern "C" fn standard_b64encode(
         unsafe {
             PyErr_NoMemory();
         }
-        return ptr::null_mut();
+        return Err(());
     };
 
     if output_len > isize::MAX as usize {
         unsafe {
             PyErr_NoMemory();
         }
-        return ptr::null_mut();
+        return Err(());
     }
 
-    let result = unsafe {
-        PyBytes_FromStringAndSize(ptr::null(), output_len as Py_ssize_t)
-    };
+    let result = unsafe { PyBytes_FromStringAndSize(ptr::null(), output_len as Py_ssize_t) };
     if result.is_null() {
-        return ptr::null_mut();
+        return Err(());
     }
 
     let dest_ptr = unsafe { PyBytes_AsString(result) };
@@ -171,13 +181,13 @@ pub unsafe extern "C" fn standard_b64encode(
         unsafe {
             Py_DecRef(result);
         }
-        return ptr::null_mut();
+        return Err(());
     }
     let dest = unsafe { slice::from_raw_parts_mut(dest_ptr.cast::<u8>(), output_len) };
 
     let written = encode_into(input, dest);
     debug_assert_eq!(written, output_len);
-    result
+    Ok(result)
 }
 
 #[unsafe(no_mangle)]
