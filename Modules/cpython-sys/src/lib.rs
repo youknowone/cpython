@@ -56,7 +56,7 @@ pub const _Py_STATIC_IMMORTAL_INITIAL_REFCNT: Py_ssize_t =
 #[cfg(not(target_pointer_width = "64"))]
 pub const _Py_STATIC_IMMORTAL_INITIAL_REFCNT: Py_ssize_t = 7u32 << 28;
 
-#[repr(C)]
+#[repr(transparent)]
 pub struct PyObject(std::cell::UnsafeCell<_object>);
 
 impl PyObject {
