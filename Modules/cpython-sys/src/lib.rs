@@ -59,6 +59,13 @@ pub const _Py_STATIC_IMMORTAL_INITIAL_REFCNT: Py_ssize_t = 7u32 << 28;
 #[repr(C)]
 pub struct PyObject(std::cell::UnsafeCell<_object>);
 
+impl PyObject {
+    #[inline]
+    pub fn as_raw(&self) -> *mut Self {
+        self.0.get() as *mut Self
+    }
+}
+
 
 #[repr(C)]
 pub union PyMethodDefFuncPointer {

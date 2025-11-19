@@ -85,7 +85,7 @@ struct BorrowedBuffer {
 impl BorrowedBuffer {
     fn from_object(obj: &PyObject) -> Result<Self, ()> {
         let mut view = MaybeUninit::<Py_buffer>::uninit();
-        if unsafe { PyObject_GetBuffer(obj as *const _ as *mut _, view.as_mut_ptr(), PYBUF_SIMPLE) } != 0 {
+        if unsafe { PyObject_GetBuffer(obj.as_raw(), view.as_mut_ptr(), PYBUF_SIMPLE) } != 0 {
             return Err(());
         }
         Ok(Self {
