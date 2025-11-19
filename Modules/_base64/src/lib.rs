@@ -126,6 +126,7 @@ pub unsafe extern "C" fn standard_b64encode(
                 c"standard_b64encode() takes exactly one argument".as_ptr(),
             );
         }
+        return ptr::null_mut();
     }
 
     let source = unsafe { &**args };
