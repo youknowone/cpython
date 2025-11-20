@@ -110,6 +110,16 @@ impl Drop for BorrowedBuffer {
     }
 }
 
+/**[clinic input]
+_base64.b64encode
+
+    source: buffer
+    /
+
+Encode bytes-like object s using the standard Base64 alphabet.
+
+The result is returned as a bytes object.
+[clinic start generated code]*/
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn standard_b64encode(
     _module: *mut PyObject,

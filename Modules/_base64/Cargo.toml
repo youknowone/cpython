@@ -6,6 +6,9 @@ edition = "2024"
 [dependencies]
 cpython-sys ={ path = "../cpython-sys" }
 
+[build-dependencies]
+cbindgen = "0.29"
+
 [lib]
 name = "_base64"
 crate-type = ["staticlib"]
