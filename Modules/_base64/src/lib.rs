@@ -158,6 +158,15 @@ impl BorrowedBuffer {
     fn as_ptr(&self) -> *const u8 {
         self.view.buf.cast::<u8>() as *const u8
     }
+
+    fn as_slice(&self, msg: &CStr) -> PyResult<&[u8]> {
+        let len = self.len();
+        if len < 0 {
+            return Err(MakeErr::type_error(msg).into());
+        }
+        let slice = unsafe { slice::from_raw_parts(self.as_ptr(), len as usize) };
+        Ok(slice)
+    }
 }
 
 impl Drop for BorrowedBuffer {
@@ -194,17 +203,9 @@ pub unsafe extern "C" fn standard_b64encode(
 fn standard_b64encode_impl(source: &PyObject) -> PyResult<*mut PyObject> {
     let buffer = BorrowedBuffer::from_object(source)?;
 
-    let view_len = buffer.len();
-    if view_len < 0 {
-        return Err(
-            MakeErr::type_error(c"standard_b64encode() argument has negative length").into(),
-        );
-    }
+    let input = buffer.as_slice(c"standard_b64encode() argument has negative length")?;
 
-    let input_len = view_len as usize;
-    let input = unsafe { slice::from_raw_parts(buffer.as_ptr(), input_len) };
-
-    let Some(output_len) = encoded_output_len(input_len) else {
+    let Some(output_len) = encoded_output_len(input.len()) else {
         return Err(MakeErr::NoMemory.into());
     };
 
